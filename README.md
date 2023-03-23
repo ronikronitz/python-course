@@ -1,2 +1,2 @@
-# pythin course
+# python course
 First assignment
