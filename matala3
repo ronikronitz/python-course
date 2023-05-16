@@ -1,0 +1,358 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "7945ae85",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import json\n",
+    "import requests\n",
+    "import pandas as pd\n",
+    "import re"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "65600b50",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "myF=open('dests.txt')\n",
+    "city1='Tel Aviv'\n",
+    "api_key='AIzaSyCC-mSZwvXAYwjFEq-C69J0kLNKTilwxjo'"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "eeb746f6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#put cities in a list\n",
+    "targets=[]\n",
+    "for target in myF: \n",
+    "    target=target.rstrip()\n",
+    "    targets.append(target)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "079bc6e0",
+   "metadata": {},
+   "source": [
+    "# Q1"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f249a092",
+   "metadata": {},
+   "source": [
+    "finding km and minutes"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "99c44744",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "km=[]\n",
+    "minutes=[]\n",
+    "for city2 in targets: \n",
+    "    url=\"https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=%s&destinations=%s&key=%s\" % (city1,city2,api_key)\n",
+    "    try:\n",
+    "        response = requests.get(url)\n",
+    "        if response.status_code == 200:\n",
+    "            try:\n",
+    "                response_data = response.json()\n",
+    "                distance=response_data['rows'][0]['elements'][0]['distance']['value']/1000\n",
+    "                time=response_data['rows'][0]['elements'][0]['duration']['value']/60\n",
+    "                km.append(distance)\n",
+    "                minutes.append(time)\n",
+    "            except:\n",
+    "                print(\"Response not in valid JSON format\")\n",
+    "        else:\n",
+    "            print(\"HTTP error\",response.status_code)\n",
+    "    except:\n",
+    "        print(\"Something went wrong with requests.get\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6e2d0ee4",
+   "metadata": {},
+   "source": [
+    "# Q2"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e4892098",
+   "metadata": {},
+   "source": [
+    "finding longitude and latitude"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "9b98051a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "lat=[]\n",
+    "lng=[]\n",
+    "for city2 in targets: \n",
+    "    url1=\"https://maps.googleapis.com/maps/api/geocode/json?address=%s&key=%s\" % (city2,api_key)\n",
+    "    try:\n",
+    "        response1 = requests.get(url1)\n",
+    "        if response1.status_code == 200:\n",
+    "            try:\n",
+    "                response_data1 = response1.json()\n",
+    "                lat.append(response_data1['results'][0]['geometry']['location']['lat'])\n",
+    "                lng.append(response_data1['results'][0]['geometry']['location']['lng']) \n",
+    "            except:\n",
+    "                print(\"Response not in valid JSON format\")\n",
+    "    except:\n",
+    "        print(\"Something went wrong with requests.get\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "a43680f7",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df=pd.DataFrame({'Target': targets, 'Distance_km':km, 'Duration': minutes, 'Longitude':lng, 'Latitude': lat})"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2305caa1",
+   "metadata": {},
+   "source": [
+    "# Q3"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "7ef93cf8",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Target</th>\n",
+       "      <th>Distance_km</th>\n",
+       "      <th>Duration</th>\n",
+       "      <th>Longitude</th>\n",
+       "      <th>Latitude</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>Istanbul</td>\n",
+       "      <td>1815.227</td>\n",
+       "      <td>1262.866667</td>\n",
+       "      <td>28.978359</td>\n",
+       "      <td>41.008238</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>Amsterdam</td>\n",
+       "      <td>4532.541</td>\n",
+       "      <td>2883.516667</td>\n",
+       "      <td>4.904139</td>\n",
+       "      <td>52.367573</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>Valletta</td>\n",
+       "      <td>3792.883</td>\n",
+       "      <td>3050.933333</td>\n",
+       "      <td>14.514100</td>\n",
+       "      <td>35.899237</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>Basel</td>\n",
+       "      <td>4092.805</td>\n",
+       "      <td>2642.450000</td>\n",
+       "      <td>7.588576</td>\n",
+       "      <td>47.559599</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>Doha</td>\n",
+       "      <td>2164.477</td>\n",
+       "      <td>1358.783333</td>\n",
+       "      <td>51.531040</td>\n",
+       "      <td>25.285447</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "      Target  Distance_km     Duration  Longitude   Latitude\n",
+       "0   Istanbul     1815.227  1262.866667  28.978359  41.008238\n",
+       "1  Amsterdam     4532.541  2883.516667   4.904139  52.367573\n",
+       "2   Valletta     3792.883  3050.933333  14.514100  35.899237\n",
+       "3      Basel     4092.805  2642.450000   7.588576  47.559599\n",
+       "4       Doha     2164.477  1358.783333  51.531040  25.285447"
+      ]
+     },
+     "execution_count": 7,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5339c7b0",
+   "metadata": {},
+   "source": [
+    "# Q4"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9ae04791",
+   "metadata": {},
+   "source": [
+    "find max values"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 238,
+   "id": "2d5a36e1",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Target</th>\n",
+       "      <th>Distance_km</th>\n",
+       "      <th>Duration</th>\n",
+       "      <th>Longitude</th>\n",
+       "      <th>Latitude</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>Amsterdam</td>\n",
+       "      <td>4532.541</td>\n",
+       "      <td>2883.500000</td>\n",
+       "      <td>4.904139</td>\n",
+       "      <td>52.367573</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>Basel</td>\n",
+       "      <td>4093.629</td>\n",
+       "      <td>2647.550000</td>\n",
+       "      <td>7.588576</td>\n",
+       "      <td>47.559599</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>Valletta</td>\n",
+       "      <td>3792.883</td>\n",
+       "      <td>3051.583333</td>\n",
+       "      <td>14.514100</td>\n",
+       "      <td>35.899237</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "      Target  Distance_km     Duration  Longitude   Latitude\n",
+       "1  Amsterdam     4532.541  2883.500000   4.904139  52.367573\n",
+       "3      Basel     4093.629  2647.550000   7.588576  47.559599\n",
+       "2   Valletta     3792.883  3051.583333  14.514100  35.899237"
+      ]
+     },
+     "execution_count": 238,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.nlargest(3,['Distance_km'])"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.13"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
